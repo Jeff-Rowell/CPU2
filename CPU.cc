@@ -15,14 +15,9 @@
 
 
 /*
+ * ASSIGNMENT HELP:
+ * ----------------
  * I received help from Dr. Beaty's assignment #3
- *
- * Changes:
- * ----------
- * 1) Added assert to create_idle()
- * 2)
- * 3)
- *
  */
 
 
