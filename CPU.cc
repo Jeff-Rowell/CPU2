@@ -12,261 +12,24 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <assert.h>
-
+#include <fcntl.h>
 
 /*
  * ASSIGNMENT HELP:
- * ----------------
- * I received help from Dr. Beaty's assignment #3
+ * ----------------------------------
+ * I received help from:
+ *      - Dr. Beaty's assignment #3
+ *      -
+ *
+ * I gave help to:
+ *      -
+ *      -
  */
-
-
-/*
-If compiled with -DEBUG, when run it should produce the following
-output (approximately):
-
-$ ./CPU ./myscript ./myscript ./myscript
-state:        3
-name:         IDLE
-pid:          20480
-ppid:         20478
-interrupts:   0
-switches:     0
-started:      0
-in CPU.cc at 423 at beginning of send_signals getpid() = 20479
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20480
----- entering scheduler
-running NEW process
-continuing    20481
----- leaving scheduler
-Process 20481 1
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20481
----- entering scheduler
-running NEW process
-continuing    20483
----- leaving scheduler
-Process 20483 1
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20483
----- entering scheduler
-running NEW process
-continuing    20485
----- leaving scheduler
-Process 20485 1
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20485
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20481
----- leaving scheduler
-Process 20481 2
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20481
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20483
----- leaving scheduler
-Process 20483 2
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20483
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20485
----- leaving scheduler
-Process 20485 2
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20485
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20481
----- leaving scheduler
-Process 20481 3
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20481
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20483
----- leaving scheduler
-Process 20483 3
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20483
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20485
----- leaving scheduler
-Process 20485 3
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20485
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20481
----- leaving scheduler
-Process 20481 4
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20481
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20483
----- leaving scheduler
-Process 20483 4
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20483
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20485
----- leaving scheduler
-Process 20485 4
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20485
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20481
----- leaving scheduler
-Process 20481 5
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20481
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20483
----- leaving scheduler
-Process 20483 5
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20483
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20485
----- leaving scheduler
-Process 20485 5
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20485
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20481
----- leaving scheduler
----- entering process_done
-process exited:
-state:        4
-name:         ./myscript
-pid:          20481
-ppid:         20478
-interrupts:   5
-switches:     5
-started:      1
-process took 15 second(s) to execute
----- leaving process_done
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20480
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20483
----- leaving scheduler
----- entering process_done
-process exited:
-state:        4
-name:         ./myscript
-pid:          20483
-ppid:         20478
-interrupts:   5
-switches:     5
-started:      2
-process took 15 second(s) to execute
----- leaving process_done
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20480
----- entering scheduler
-running READY process
-a switch has occurred
-continuing    20485
----- leaving scheduler
----- entering process_done
-process exited:
-state:        4
-name:         ./myscript
-pid:          20485
-ppid:         20478
-interrupts:   5
-switches:     5
-started:      3
-process took 15 second(s) to execute
----- leaving process_done
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-In ISR stopped:     20480
----- entering scheduler
-continuing    20480
----- leaving scheduler
-in CPU.cc at 428 sending signal = 14
-in CPU.cc at 429 to pid = 20478
-in CPU.cc at 433 at end of send_signals
-In ISR stopped:     20480
----- entering scheduler
-Terminated: 15
- ---------------------------------------------------------------------------
-Added the following functionality.
-1) Changed the NUM_SECONDS to 20.
-
-2) Take any number of arguments for executables and place each on the
-   processes list with a state of NEW. The executables will not require
-   arguments themselves.
-
-3) When a SIGALRM arrives, scheduler() will be called; it currently simply
-   restarts the idle process. Instead, do the following.
-   a) Update the PCB for the process that was interrupted including the
-      number of context switches and interrupts it had and changing its
-      state from RUNNING to READY.
-   b) If there are any NEW processes on processes list, change its state to
-      RUNNING, and fork() and execl() it.
-   c) If there are no NEW processes, round robin the processes in the
-      processes queue that are READY. If no process is READY in the
-      list, execute the idle process.
-
-4) When a SIGCHLD arrives notifying that a child has exited, process_done() is
-   called. process_done() currently only prints out the PID and the status.
-   a) Add the printing of the information in the PCB including the number
-      of times it was interrupted, the number of times it was context
-      switched (this may be fewer than the interrupts if a process
-      becomes the only non-idle process in the ready queue), and the total
-      system time the process took.
-   b) Change the state to TERMINATED.
-   c) Restart the idle process to use the rest of the time slice.
-*/
 
 #define NUM_SECONDS 20
 #define EVER ;;
+#define READ 0
+#define WRITE 1
 
 #define assertsyscall(x, y) if(!((x) y)){int err = errno; \
     fprintf(stderr, "In file %s at line %d: ", __FILE__, __LINE__); \
@@ -300,12 +63,14 @@ enum STATE { NEW, RUNNING, WAITING, READY, TERMINATED };
 struct PCB
 {
     STATE state;
-    const char *name;   // name of the executable
-    int pid;            // process id from fork();
-    int ppid;           // parent process id
-    int interrupts;     // number of times interrupted
-    int switches;       // may be < interrupts
-    int started;        // the time this process started
+    const char *name;       // name of the executable
+    int pid;                // process id from fork();
+    int ppid;               // parent process id
+    int interrupts;         // number of times interrupted
+    int switches;           // may be < interrupts
+    int started;            // the time this process started
+    int *child2parent;      // pipe from child to parent
+    int *parent2child;      // pipe from parent to child
 };
 
 PCB *running;
@@ -356,6 +121,75 @@ int eye2eh(int i, char *buf, int bufsize, int base)
     }
     if(i != 0) return(-1);
     return(count);
+}
+
+void serialize(PCB *proc, char *buf)
+{
+    PCB *process = proc;
+    char buffer1[4];
+
+    /* state */
+    assertsyscall(eye2eh(process->state, buffer1, sizeof(buffer1), 10), != -1);
+    strncat(buf, "state:      ", strlen("state:      "));
+    strncat(buf, buffer1, sizeof(buffer1));
+
+    /* name */
+    strncat(buf, "\nname:         ", strlen("\nname:         "));
+    strncat(buf, process->name, strlen(process->name));
+
+    /* pid */
+    char buffer2[8];
+    assertsyscall(eye2eh(process->pid, buffer2, sizeof(buffer2), 10), != -1);
+    strncat(buf, "\npid:         ", strlen("pid:         "));
+    strncat(buf, buffer2, sizeof(buffer2));
+
+    /* ppid */
+    char buffer3[8];
+    assertsyscall(eye2eh(process->ppid, buffer3, sizeof(buffer3), 10), != -1);
+    strncat(buf, "\nppid:        ", strlen("ppid:        "));
+    strncat(buf, buffer3, sizeof(buffer3));
+
+    /* interrupts */
+    char buffer4[4];
+    assertsyscall(eye2eh(process->interrupts, buffer4, sizeof(buffer4), 10), != -1);
+    if(process->interrupts == 0)
+    {
+        strncat(buf, "\ninterrupts:   0", strlen("interrupts:    0"));
+    }
+    else
+    {
+        strncat(buf, "\ninterrupts:   ", strlen("interrupts:    "));
+        strncat(buf, buffer4, sizeof(buffer4));
+    }
+
+    /* switches */
+    char buffer5[4];
+    assertsyscall(eye2eh(process->switches, buffer5, sizeof(buffer5), 10), != -1);
+    if(process->switches == 0)
+    {
+        strncat(buf, "\nswitches:     0", strlen("switches:      0"));
+    }
+    else
+    {
+        strncat(buf, "\nswitches:     ", strlen("switches:      "));
+        strncat(buf, buffer5, sizeof(buffer5));
+    }
+
+    /* started */
+    char buffer6[4];
+    assertsyscall(eye2eh(process->started, buffer6, sizeof(buffer6), 10), != -1);
+    strncat(buf, "\nstarted:     ", strlen("started:     "));
+    strncat(buf, buffer6, sizeof(buffer6));
+    strncat(buf, "\n\n", strlen("\n\n"));
+}
+
+void serialize_list(list<PCB *> proc_list, char *buf)
+{
+    list<PCB *>::iterator PCB_iter;
+    for(PCB_iter = proc_list.begin(); PCB_iter != proc_list.end(); PCB_iter++)
+    {
+        serialize((*PCB_iter), buf);
+    }
 }
 
 /*
@@ -499,11 +333,23 @@ void scheduler(int signum)
             front->started = sys_time;
             running = front;
 
+            int fl;
+            assertsyscall((fl = fcntl(front->child2parent[READ], F_GETFL)), != -1);
+            assertsyscall(fcntl(front->child2parent[READ], F_SETFL, fl | O_NONBLOCK), == 0);
+
             assertsyscall((front->pid = fork()), != -1);
             if(front->pid == 0)
             {
+                // close the ends we should't use
+                assertsyscall(close(front->child2parent[READ]), == 0);
+                assertsyscall(close(front->parent2child[WRITE]), == 0);
+                assertsyscall(dup2( (front->child2parent[WRITE]), 3), != -1);
+                assertsyscall(dup2( (front->parent2child[READ]), 4), != -1);
                 assertsyscall(execl(front->name, front->name, NULL), != -1);
             }
+            // close the ends we should't use
+//            assertsyscall(close(front->child2parent[WRITE]), == 0);
+//            assertsyscall(close(front->parent2child[READ]), == 0);
             found_one = 1;
             break;
         }
@@ -573,11 +419,11 @@ void process_done(int signum)
             for(PCB_iter = processes.begin(); PCB_iter != processes.end(); PCB_iter++)
             {
                 PCB* process = *PCB_iter;
-                if((process)->pid == cpid)
+                if(process->pid == cpid)
                 {
-                    (process)->state = TERMINATED;
-                    cout << (process);
-                    cout << "process took " << sys_time - (process->started) << " second(s) to execute\n";
+                    process->state = TERMINATED;
+                    cout << process;
+                    cout << "process took " << sys_time - process->started << " second(s) to execute\n";
                 }
             }
         }
@@ -598,6 +444,63 @@ void process_done(int signum)
 }
 
 /*
+ * SIGTRAP handler
+ */
+void trap_handler(int signum)
+{
+    WRITES("---- entering trap_handler\n");
+    assert(signum == SIGTRAP);
+
+    list<PCB *>::iterator PCB_iter;
+    for(PCB_iter = processes.begin(); PCB_iter != processes.end(); PCB_iter++)
+    {
+        PCB *process = *PCB_iter;
+        if(strcmp(process->name, "IDLE") == 0)
+        {
+            continue;
+        }
+
+        char buf[200000];
+        int len;
+        assertsyscall((len = read(process->child2parent[READ], buf, 1)), != -1);
+        buf[len] = 0;
+
+        WRITES("received kernel call: ");
+        if((strncmp(buf, "1", len)) == 0) // return sys_time
+        {
+            WRITES(buf);
+            WRITES("\n");
+            char buffer[4];
+            assert(eye2eh(sys_time, buffer, 4, 10) != -1);
+            assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
+        }
+        else if((strncmp(buf, "2", len)) == 0) // return calling process' info
+        {
+            WRITES(buf);
+            WRITES("\n");
+            char buffer[200000];
+            serialize(process, buffer);
+            assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
+        }
+        else if((strncmp(buf, "3", len)) == 0) // return list of processes
+        {
+            WRITES(buf);
+            WRITES("\n");
+            char buffer[2000000];
+            serialize_list(processes, buffer);
+            assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
+        }
+        else if((strncmp(buf, "4", len)) == 0) // output to stdout until null is found
+        {
+            WRITES(buf);
+            WRITES("\noutput to stdout until null is found\n");
+        }
+    }
+
+    WRITES("---- leaving trap_handler\n");
+}
+
+/*
 ** set up the "hardware"
 */
 void boot()
@@ -606,8 +509,10 @@ void boot()
 
     ISV[SIGALRM] = scheduler;
     ISV[SIGCHLD] = process_done;
+    ISV[SIGTRAP] = trap_handler;
     struct sigaction *alarm = create_handler(SIGALRM, ISR);
     struct sigaction *child = create_handler(SIGCHLD, ISR);
+    struct sigaction *trap = create_handler(SIGTRAP, ISR);
 
     // start up clock interrupt
     int ret;
@@ -618,6 +523,7 @@ void boot()
         // once that's done, cleanup and really kill everything...
         delete(alarm);
         delete(child);
+        delete(trap);
         delete(idle);
         delete(running);
         delete(temp);
@@ -652,6 +558,11 @@ int main(int argc, char **argv)
 {
     for(int i = 1; i < argc; i++)
     {
+        int parent2child[2];
+        int child2parent[2];
+        assertsyscall(pipe(child2parent), == 0);
+        assertsyscall(pipe(parent2child), == 0);
+
         PCB* process_i = new(PCB);
         process_i->state = NEW;
         process_i->name = argv[i];
@@ -660,6 +571,8 @@ int main(int argc, char **argv)
         process_i->interrupts = 0;
         process_i->switches = 0;
         process_i->started = 0;
+        process_i->parent2child = parent2child;
+        process_i->child2parent = child2parent;
         processes.push_back(process_i);
     }
 
