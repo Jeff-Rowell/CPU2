@@ -15,16 +15,16 @@
 #include <fcntl.h>
 
 /*
- * ASSIGNMENT HELP:
- * ----------------------------------
- * I received help from:
- *      - Dr. Beaty's assignment #3
- *      -
- *
- * I gave help to:
- *      -
- *      -
- */
+* ASSIGNMENT HELP:
+* ----------------------------------
+* I received help from:
+* - Dr. Beaty's assignment #3
+* -
+*
+* I gave help to:
+* -
+* -
+*/
 
 #define NUM_SECONDS 20
 #define EVER ;;
@@ -32,23 +32,23 @@
 #define WRITE 1
 
 #define assertsyscall(x, y) if(!((x) y)){int err = errno; \
-    fprintf(stderr, "In file %s at line %d: ", __FILE__, __LINE__); \
-        perror(#x); exit(err);}
+fprintf(stderr, "In file %s at line %d: ", __FILE__, __LINE__); \
+perror(#x); exit(err);}
 
 #ifdef EBUG
-#   define dmess(a) cout << "in " << __FILE__ << \
-    " at " << __LINE__ << " " << a << endl;
+# define dmess(a) cout << "in " << __FILE__ << \
+" at " << __LINE__ << " " << a << endl;
 
-#   define dprint(a) cout << "in " << __FILE__ << \
-    " at " << __LINE__ << " " << (#a) << " = " << a << endl;
+# define dprint(a) cout << "in " << __FILE__ << \
+" at " << __LINE__ << " " << (#a) << " = " << a << endl;
 
-#   define dprintt(a,b) cout << "in " << __FILE__ << \
-    " at " << __LINE__ << " " << a << " " << (#b) << " = " \
-    << b << endl
+# define dprintt(a,b) cout << "in " << __FILE__ << \
+" at " << __LINE__ << " " << a << " " << (#b) << " = " \
+<< b << endl
 #else
-#   define dmess(a)
-#   define dprint(a)
-#   define dprintt(a,b)
+# define dmess(a)
+# define dprint(a)
+# define dprintt(a,b)
 #endif
 
 using namespace std;
@@ -69,8 +69,8 @@ struct PCB
     int interrupts;         // number of times interrupted
     int switches;           // may be < interrupts
     int started;            // the time this process started
-    int *child2parent;      // pipe from child to parent
-    int *parent2child;      // pipe from parent to child
+    int child2parent[2];    // pipe from child to parent
+    int parent2child[2];    // pipe from parent to child
 };
 
 PCB *running;
@@ -126,40 +126,40 @@ int eye2eh(int i, char *buf, int bufsize, int base)
 void serialize(PCB *proc, char *buf)
 {
     PCB *process = proc;
-    char buffer1[4];
 
     /* state */
+    char buffer1[4];
     assertsyscall(eye2eh(process->state, buffer1, sizeof(buffer1), 10), != -1);
-    strncat(buf, "state:      ", strlen("state:      "));
-    strncat(buf, buffer1, sizeof(buffer1));
+    strncat(buf, "state: ", strlen("state: "));
+    strncat(buf, buffer1, sizeof(buffer1) * sizeof(char));
 
     /* name */
-    strncat(buf, "\nname:         ", strlen("\nname:         "));
+    strncat(buf, "\nname: ", strlen("\nname: "));
     strncat(buf, process->name, strlen(process->name));
 
     /* pid */
     char buffer2[8];
     assertsyscall(eye2eh(process->pid, buffer2, sizeof(buffer2), 10), != -1);
-    strncat(buf, "\npid:         ", strlen("pid:         "));
-    strncat(buf, buffer2, sizeof(buffer2));
+    strncat(buf, "\npid: ", strlen("\npid: "));
+    strncat(buf, buffer2, sizeof(buffer2) * sizeof(char));
 
     /* ppid */
     char buffer3[8];
     assertsyscall(eye2eh(process->ppid, buffer3, sizeof(buffer3), 10), != -1);
-    strncat(buf, "\nppid:        ", strlen("ppid:        "));
-    strncat(buf, buffer3, sizeof(buffer3));
+    strncat(buf, "\nppid: ", strlen("\nppid: "));
+    strncat(buf, buffer3, sizeof(buffer3) * sizeof(char));
 
     /* interrupts */
     char buffer4[4];
     assertsyscall(eye2eh(process->interrupts, buffer4, sizeof(buffer4), 10), != -1);
     if(process->interrupts == 0)
     {
-        strncat(buf, "\ninterrupts:   0", strlen("interrupts:    0"));
+        strncat(buf, "\ninterrupts: 0", strlen("\ninterrupts: 0"));
     }
     else
     {
-        strncat(buf, "\ninterrupts:   ", strlen("interrupts:    "));
-        strncat(buf, buffer4, sizeof(buffer4));
+        strncat(buf, "\ninterrupts: ", strlen("\ninterrupts: "));
+        strncat(buf, buffer4, sizeof(buffer4) * sizeof(char));
     }
 
     /* switches */
@@ -167,19 +167,19 @@ void serialize(PCB *proc, char *buf)
     assertsyscall(eye2eh(process->switches, buffer5, sizeof(buffer5), 10), != -1);
     if(process->switches == 0)
     {
-        strncat(buf, "\nswitches:     0", strlen("switches:      0"));
+        strncat(buf, "\nswitches: 0", strlen("\nswitches: 0"));
     }
     else
     {
-        strncat(buf, "\nswitches:     ", strlen("switches:      "));
-        strncat(buf, buffer5, sizeof(buffer5));
+        strncat(buf, "\nswitches: ", strlen("\nswitches: "));
+        strncat(buf, buffer5, sizeof(buffer5) * sizeof(char));
     }
 
     /* started */
     char buffer6[4];
     assertsyscall(eye2eh(process->started, buffer6, sizeof(buffer6), 10), != -1);
-    strncat(buf, "\nstarted:     ", strlen("started:     "));
-    strncat(buf, buffer6, sizeof(buffer6));
+    strncat(buf, "\nstarted: ", strlen("\nstarted: "));
+    strncat(buf, buffer6, sizeof(buffer6) * sizeof(char));
     strncat(buf, "\n\n", strlen("\n\n"));
 }
 
@@ -200,8 +200,8 @@ void grab(int signum) { WRITEI(signum); WRITES("\n"); }
 
 // c++decl> declare ISV as array 32 of pointer to function(int) returning void
 void(*ISV[32])(int) = {
-/*        00    01    02    03    04    05    06    07    08    09 */
-/*  0 */ grab, grab, grab, grab, grab, grab, grab, grab, grab, grab,
+/* 00 01 02 03 04 05 06 07 08 09 */
+/* 0 */ grab, grab, grab, grab, grab, grab, grab, grab, grab, grab,
 /* 10 */ grab, grab, grab, grab, grab, grab, grab, grab, grab, grab,
 /* 20 */ grab, grab, grab, grab, grab, grab, grab, grab, grab, grab,
 /* 30 */ grab, grab
@@ -236,13 +236,13 @@ void ISR(int signum)
 */
 ostream& operator <<(ostream &os, struct PCB *pcb)
 {
-    os << "state:        " << pcb->state << endl;
-    os << "name:         " << pcb->name << endl;
-    os << "pid:          " << pcb->pid << endl;
-    os << "ppid:         " << pcb->ppid << endl;
-    os << "interrupts:   " << pcb->interrupts << endl;
-    os << "switches:     " << pcb->switches << endl;
-    os << "started:      " << pcb->started << endl;
+    os << "state: " << pcb->state << endl;
+    os << "name: " << pcb->name << endl;
+    os << "pid: " << pcb->pid << endl;
+    os << "ppid: " << pcb->ppid << endl;
+    os << "interrupts: " << pcb->interrupts << endl;
+    os << "switches: " << pcb->switches << endl;
+    os << "started: " << pcb->started << endl;
     return(os);
 }
 
@@ -260,7 +260,7 @@ ostream& operator <<(ostream &os, list<PCB *> which)
 }
 
 /*
-**  send signal to process pid every interval for number of times.
+** send signal to process pid every interval for number of times.
 */
 void send_signals(int signal, int pid, int interval, int number)
 {
@@ -284,10 +284,10 @@ struct sigaction *create_handler(int signum, void(*handler)(int))
     action->sa_handler = handler;
 
 /*
-**  SA_NOCLDSTOP
-**  If  signum  is  SIGCHLD, do not receive notification when
-**  child processes stop(i.e., when child processes  receive
-**  one of SIGSTOP, SIGTSTP, SIGTTIN or SIGTTOU).
+** SA_NOCLDSTOP
+** If signum is SIGCHLD, do not receive notification when
+** child processes stop(i.e., when child processes receive
+** one of SIGSTOP, SIGTSTP, SIGTTIN or SIGTTOU).
 */
     if(signum == SIGCHLD)
     {
@@ -295,7 +295,7 @@ struct sigaction *create_handler(int signum, void(*handler)(int))
     }
     else
     {
-        action->sa_flags =  SA_RESTART;
+        action->sa_flags = SA_RESTART;
     }
 
     sigemptyset(&(action->sa_mask));
@@ -332,11 +332,6 @@ void scheduler(int signum)
             front->interrupts = 0;
             front->started = sys_time;
             running = front;
-
-            int fl;
-            assertsyscall((fl = fcntl(front->child2parent[READ], F_GETFL)), != -1);
-            assertsyscall(fcntl(front->child2parent[READ], F_SETFL, fl | O_NONBLOCK), == 0);
-
             assertsyscall((front->pid = fork()), != -1);
             if(front->pid == 0)
             {
@@ -348,8 +343,8 @@ void scheduler(int signum)
                 assertsyscall(execl(front->name, front->name, NULL), != -1);
             }
             // close the ends we should't use
-//            assertsyscall(close(front->child2parent[WRITE]), == 0);
-//            assertsyscall(close(front->parent2child[READ]), == 0);
+            assertsyscall(close(front->child2parent[WRITE]), == 0);
+            assertsyscall(close(front->parent2child[READ]), == 0);
             found_one = 1;
             break;
         }
@@ -386,6 +381,7 @@ void scheduler(int signum)
             kill(0, SIGTERM);
         }
     }
+
     WRITES("\n---- leaving scheduler\n");
 }
 
@@ -444,8 +440,8 @@ void process_done(int signum)
 }
 
 /*
- * SIGTRAP handler
- */
+* SIGTRAP handler
+*/
 void trap_handler(int signum)
 {
     WRITES("---- entering trap_handler\n");
@@ -510,6 +506,7 @@ void boot()
     ISV[SIGALRM] = scheduler;
     ISV[SIGCHLD] = process_done;
     ISV[SIGTRAP] = trap_handler;
+
     struct sigaction *alarm = create_handler(SIGALRM, ISR);
     struct sigaction *child = create_handler(SIGCHLD, ISR);
     struct sigaction *trap = create_handler(SIGTRAP, ISR);
@@ -558,11 +555,6 @@ int main(int argc, char **argv)
 {
     for(int i = 1; i < argc; i++)
     {
-        int parent2child[2];
-        int child2parent[2];
-        assertsyscall(pipe(child2parent), == 0);
-        assertsyscall(pipe(parent2child), == 0);
-
         PCB* process_i = new(PCB);
         process_i->state = NEW;
         process_i->name = argv[i];
@@ -571,8 +563,13 @@ int main(int argc, char **argv)
         process_i->interrupts = 0;
         process_i->switches = 0;
         process_i->started = 0;
-        process_i->parent2child = parent2child;
-        process_i->child2parent = child2parent;
+
+        assertsyscall(pipe(process_i->child2parent), == 0);
+        assertsyscall(pipe(process_i->parent2child), == 0);
+        int fl;
+        assertsyscall((fl = fcntl(process_i->child2parent[READ], F_GETFL)), != -1);
+        assertsyscall(fcntl(process_i->child2parent[READ], F_SETFL, fl | O_NONBLOCK), == 0);
+
         processes.push_back(process_i);
     }
 
