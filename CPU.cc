@@ -180,7 +180,7 @@ void serialize(PCB *proc, char *buf)
     assertsyscall(eye2eh(process->started, buffer6, sizeof(buffer6), 10), != -1);
     strncat(buf, "\nstarted: ", strlen("\nstarted: "));
     strncat(buf, buffer6, sizeof(buffer6) * sizeof(char));
-    strncat(buf, "\n\n", strlen("\n\n"));
+    strncat(buf, "\n", strlen("\n"));
 }
 
 void serialize_list(list<PCB *> proc_list, char *buf)
@@ -451,10 +451,8 @@ void trap_handler(int signum)
     for(PCB_iter = processes.begin(); PCB_iter != processes.end(); PCB_iter++)
     {
         PCB *process = *PCB_iter;
-        if(strcmp(process->name, "IDLE") == 0)
-        {
-            continue;
-        }
+        processes.pop_front();
+        processes.push_back(process);
 
         char buf[200000];
         int len;
@@ -466,8 +464,11 @@ void trap_handler(int signum)
         {
             WRITES(buf);
             WRITES("\n");
-            char buffer[4];
-            assert(eye2eh(sys_time, buffer, 4, 10) != -1);
+            char buffer[12];
+            strncat(buffer, "SYS_TIME: ", strlen("SYS_TIME: "));
+            char sys_time_str[2];
+            assert(eye2eh(sys_time, sys_time_str, 2, 10) != -1);
+            strncat(buffer, sys_time_str, sizeof(buffer) - strlen(buffer) - 1);
             assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
         }
         else if((strncmp(buf, "2", len)) == 0) // return calling process' info
@@ -475,6 +476,7 @@ void trap_handler(int signum)
             WRITES(buf);
             WRITES("\n");
             char buffer[200000];
+            strncat(buffer, "CALLING PROCESS' INFO\n", strlen("CALLING PROCESS' INFO\n"));
             serialize(process, buffer);
             assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
         }
@@ -483,6 +485,7 @@ void trap_handler(int signum)
             WRITES(buf);
             WRITES("\n");
             char buffer[2000000];
+            strncat(buffer, "PROCESS LIST\n", strlen("PROCESS LIST\n"));
             serialize_list(processes, buffer);
             assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
         }
@@ -555,6 +558,7 @@ int main(int argc, char **argv)
 {
     for(int i = 1; i < argc; i++)
     {
+        int fl;
         PCB* process_i = new(PCB);
         process_i->state = NEW;
         process_i->name = argv[i];
@@ -566,7 +570,6 @@ int main(int argc, char **argv)
 
         assertsyscall(pipe(process_i->child2parent), == 0);
         assertsyscall(pipe(process_i->parent2child), == 0);
-        int fl;
         assertsyscall((fl = fcntl(process_i->child2parent[READ], F_GETFL)), != -1);
         assertsyscall(fcntl(process_i->child2parent[READ], F_SETFL, fl | O_NONBLOCK), == 0);
 
