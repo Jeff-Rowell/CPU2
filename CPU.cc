@@ -484,7 +484,7 @@ void trap_handler(int signum)
         {
             WRITES(buf);
             WRITES("\n");
-            char buffer[2000000];
+            char buffer[200000];
             strncat(buffer, "PROCESS LIST\n", strlen("PROCESS LIST\n"));
             serialize_list(processes, buffer);
             assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
@@ -492,7 +492,7 @@ void trap_handler(int signum)
         else if((strncmp(buf, "4", len)) == 0) // output to stdout until null is found
         {
             WRITES(buf);
-            WRITES("\noutput to stdout until null is found\n");
+            WRITES("\nOUTPUT TO STDOUT UNTIL NULL IS FOUND?\n");
         }
     }
 
