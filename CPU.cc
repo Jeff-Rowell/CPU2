@@ -376,7 +376,7 @@ void scheduler(int signum)
         WRITES("continuing idle");
         idle->state = RUNNING;
         running = idle;
-        if (kill(idle->pid, SIGCONT) == -1)
+        if(kill(idle->pid, SIGCONT) == -1)
         {
             kill(0, SIGTERM);
         }
