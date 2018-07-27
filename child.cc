@@ -14,7 +14,6 @@
 
 int main(int argc, char* argv[])
 {
-//    WRITES("---- entering child\n");
     pid_t ppid = getppid(); // always successful
 
     char buffer1[200000];
@@ -23,9 +22,6 @@ int main(int argc, char* argv[])
     assert( kill(ppid, SIGTRAP) != -1 );
     assertsyscall((len1 = read(4, buffer1, sizeof(buffer1))), != -1);
     buffer1[len1] = 0;
-//    WRITES(buffer1);
-//    WRITES("\n");
-
 
     char buffer2[200000];
     int len2;
@@ -33,9 +29,6 @@ int main(int argc, char* argv[])
     assert( kill(ppid, SIGTRAP) != -1 );
     assertsyscall((len2 = read(4, buffer2, sizeof(buffer2))), != -1);
     buffer2[len2] = 0;
-////    WRITES(buffer2);
-////    WRITES("\n");
-
 
     char buffer3[200000];
     int len3;
@@ -43,9 +36,6 @@ int main(int argc, char* argv[])
     assert( kill(ppid, SIGTRAP) != -1 );
     assertsyscall((len3 = read(4, buffer3, sizeof(buffer3))), != -1);
     buffer3[len3] = 0;
-////    WRITES(buffer3);
-////    WRITES("\n");
-
 
     char buffer4[20000];
     int len4;
@@ -53,8 +43,6 @@ int main(int argc, char* argv[])
     assert( kill(ppid, SIGTRAP) != -1 );
     assertsyscall((len4 = read(4, buffer4, sizeof(buffer4))), != -1);
     buffer4[len4] = 0;
-////    WRITES(buffer4);
-////    WRITES("---- leaving child\n");
 
     return 0;
 }

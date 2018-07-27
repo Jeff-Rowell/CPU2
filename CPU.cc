@@ -17,13 +17,11 @@
 
 /*
 * ASSIGNMENT HELP:
-* ----------------------------------
+* -------------------------------
 * I received help from:
 * - Dr. Beaty's assignment #3
-* -
 *
 * I gave help to:
-* -
 * -
 */
 
@@ -385,8 +383,6 @@ void trap_handler(int signum)
     for(i = processes.begin(); i != processes.end(); i++)
     {
         PCB *process = *i;
-//        processes.pop_front();
-//        processes.push_back(process);
 
         struct pollfd fds[1];
         fds[0].fd = process->child2parent[READ];
@@ -452,64 +448,6 @@ void trap_handler(int signum)
             }
         }
     }
-
-//    list<PCB *>::iterator PCB_iter;
-//    for(PCB_iter = processes.begin(); PCB_iter != processes.end(); PCB_iter++)
-//    {
-//        PCB *process = *PCB_iter;
-//        processes.pop_front();
-//        processes.push_back(process);
-//
-//        char buf[200000];
-//        int len;
-//        assertsyscall((len = read(process->child2parent[READ], buf, sizeof(buf))), != -1);
-//        buf[len] = 0;
-//
-//        WRITES("received kernel call: ");
-//        if((strncmp(buf, "1", 1)) == 0) // return sys_time
-//        {
-//            WRITES("1\n");
-//            char temp[16];
-//            strncat(temp, "sys_time: ", strlen("sys_time: "));
-//            assertsyscall(eye2eh(sys_time, temp, sizeof(temp), 10), != -1);
-//            assertsyscall((write(process->parent2child[WRITE], temp, sizeof(temp))), != -1);
-//            WRITES("sys_time: ");
-//            WRITEI(sys_time);
-//            WRITES("\n");
-//
-//        }
-//        else if((strncmp(buf, "2", 1)) == 0) // return calling process' info
-//        {
-//            WRITES("2\n");
-//            assertsyscall((write(process->parent2child[WRITE], process->name, sizeof((process->name)))), != -1);
-//            WRITES("calling process: ");
-//            WRITES(process->name);
-//            WRITES("\n");
-//        }
-//        else if((strncmp(buf, "3", 1)) == 0) // return list of processes
-//        {
-//            WRITES("3\n");
-//            char temp[200000];
-//            for(list<PCB *>::iterator i = processes.begin(); i != processes.end(); i++)
-//            {
-//                strncat(temp, "\t", strlen("\t"));
-//                strncat(temp, (*i)->name, strlen((*i)->name));
-//            }
-//            assertsyscall((write(process->parent2child[WRITE], process->name, sizeof(process->name))), != -1);
-//            WRITES("process list: \n");
-//            WRITES(temp);
-//            WRITES("\n");
-//        }
-//        else if((strncmp(buf, "4", 1)) == 0) // output to stdout until null is found
-//        {
-//            WRITES("4\n");
-//            char *temp = buf;
-//            temp++;
-//            assertsyscall((write(process->parent2child[WRITE], temp, sizeof(temp))), != -1);
-//            WRITES(temp);
-//            WRITES("\n");
-//        }
-//    }
 
     WRITES("---- leaving trap_handler\n");
 }
