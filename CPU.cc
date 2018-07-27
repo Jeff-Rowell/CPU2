@@ -13,6 +13,7 @@
 #include <sys/wait.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <poll.h>
 
 /*
 * ASSIGNMENT HELP:
@@ -121,75 +122,6 @@ int eye2eh(int i, char *buf, int bufsize, int base)
     }
     if(i != 0) return(-1);
     return(count);
-}
-
-void serialize(PCB *proc, char *buf)
-{
-    PCB *process = proc;
-
-    /* state */
-    char buffer1[4];
-    assertsyscall(eye2eh(process->state, buffer1, sizeof(buffer1), 10), != -1);
-    strncat(buf, "state: ", strlen("state: "));
-    strncat(buf, buffer1, sizeof(buffer1) * sizeof(char));
-
-    /* name */
-    strncat(buf, "\nname: ", strlen("\nname: "));
-    strncat(buf, process->name, strlen(process->name));
-
-    /* pid */
-    char buffer2[8];
-    assertsyscall(eye2eh(process->pid, buffer2, sizeof(buffer2), 10), != -1);
-    strncat(buf, "\npid: ", strlen("\npid: "));
-    strncat(buf, buffer2, sizeof(buffer2) * sizeof(char));
-
-    /* ppid */
-    char buffer3[8];
-    assertsyscall(eye2eh(process->ppid, buffer3, sizeof(buffer3), 10), != -1);
-    strncat(buf, "\nppid: ", strlen("\nppid: "));
-    strncat(buf, buffer3, sizeof(buffer3) * sizeof(char));
-
-    /* interrupts */
-    char buffer4[4];
-    assertsyscall(eye2eh(process->interrupts, buffer4, sizeof(buffer4), 10), != -1);
-    if(process->interrupts == 0)
-    {
-        strncat(buf, "\ninterrupts: 0", strlen("\ninterrupts: 0"));
-    }
-    else
-    {
-        strncat(buf, "\ninterrupts: ", strlen("\ninterrupts: "));
-        strncat(buf, buffer4, sizeof(buffer4) * sizeof(char));
-    }
-
-    /* switches */
-    char buffer5[4];
-    assertsyscall(eye2eh(process->switches, buffer5, sizeof(buffer5), 10), != -1);
-    if(process->switches == 0)
-    {
-        strncat(buf, "\nswitches: 0", strlen("\nswitches: 0"));
-    }
-    else
-    {
-        strncat(buf, "\nswitches: ", strlen("\nswitches: "));
-        strncat(buf, buffer5, sizeof(buffer5) * sizeof(char));
-    }
-
-    /* started */
-    char buffer6[4];
-    assertsyscall(eye2eh(process->started, buffer6, sizeof(buffer6), 10), != -1);
-    strncat(buf, "\nstarted: ", strlen("\nstarted: "));
-    strncat(buf, buffer6, sizeof(buffer6) * sizeof(char));
-    strncat(buf, "\n", strlen("\n"));
-}
-
-void serialize_list(list<PCB *> proc_list, char *buf)
-{
-    list<PCB *>::iterator PCB_iter;
-    for(PCB_iter = proc_list.begin(); PCB_iter != proc_list.end(); PCB_iter++)
-    {
-        serialize((*PCB_iter), buf);
-    }
 }
 
 /*
@@ -332,6 +264,7 @@ void scheduler(int signum)
             front->interrupts = 0;
             front->started = sys_time;
             running = front;
+
             assertsyscall((front->pid = fork()), != -1);
             if(front->pid == 0)
             {
@@ -447,54 +380,136 @@ void trap_handler(int signum)
     WRITES("---- entering trap_handler\n");
     assert(signum == SIGTRAP);
 
-    list<PCB *>::iterator PCB_iter;
-    for(PCB_iter = processes.begin(); PCB_iter != processes.end(); PCB_iter++)
+    char buffer[10240];
+    list<PCB *>::iterator i;
+    for(i = processes.begin(); i != processes.end(); i++)
     {
-        PCB *process = *PCB_iter;
-        processes.pop_front();
-        processes.push_back(process);
+        PCB *process = *i;
+//        processes.pop_front();
+//        processes.push_back(process);
 
-        char buf[200000];
-        int len;
-        assertsyscall((len = read(process->child2parent[READ], buf, 1)), != -1);
-        buf[len] = 0;
+        struct pollfd fds[1];
+        fds[0].fd = process->child2parent[READ];
+        fds[0].events = POLLIN | POLLOUT;
+        int ret = poll(fds, (nfds_t) 1, 0);
 
-        WRITES("received kernel call: ");
-        if((strncmp(buf, "1", len)) == 0) // return sys_time
+        if (ret > 0)
         {
-            WRITES(buf);
-            WRITES("\n");
-            char buffer[12];
-            strncat(buffer, "SYS_TIME: ", strlen("SYS_TIME: "));
-            char sys_time_str[2];
-            assert(eye2eh(sys_time, sys_time_str, 2, 10) != -1);
-            strncat(buffer, sys_time_str, sizeof(buffer) - strlen(buffer) - 1);
-            assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
-        }
-        else if((strncmp(buf, "2", len)) == 0) // return calling process' info
-        {
-            WRITES(buf);
-            WRITES("\n");
-            char buffer[200000];
-            strncat(buffer, "CALLING PROCESS' INFO\n", strlen("CALLING PROCESS' INFO\n"));
-            serialize(process, buffer);
-            assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
-        }
-        else if((strncmp(buf, "3", len)) == 0) // return list of processes
-        {
-            WRITES(buf);
-            WRITES("\n");
-            char buffer[200000];
-            strncat(buffer, "PROCESS LIST\n", strlen("PROCESS LIST\n"));
-            serialize_list(processes, buffer);
-            assertsyscall(write(process->parent2child[WRITE], buffer, sizeof(buffer)), != -1);
-        }
-        else if((strncmp(buf, "4", len)) == 0) // output to stdout until null is found
-        {
-            WRITES(buf);
-            WRITES("\nOUTPUT TO STDOUT UNTIL NULL IS FOUND?\n");
+            if (fds[0].revents & POLLIN)
+            {
+                int n = read(process->child2parent[READ], buffer, 1000);
+                buffer[n] = '\0';
+                char kernel_call = buffer[0];
+
+                WRITES("received kernel call: ");
+                if(kernel_call == '1')
+                {
+                    WRITES("1\nsystem_time: ");
+                    WRITEI(sys_time);
+                    WRITES("\n");
+                    char buf[24];
+                    strncat(buf, "system_time: ", strlen("system_time: "));
+                    assertsyscall(eye2eh(sys_time, buf, strlen(buf), 10), != -1);
+                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf))), != -1);
+                }
+                else if(kernel_call == '2')
+                {
+                    WRITES("2\ncalling process: ");
+                    WRITES(process->name);
+                    WRITES("\n");
+                    char buf[240000];
+                    strncat(buf, "calling process: \n", strlen("calling process: \n"));
+                    strncat(buf, process->name, strlen(process->name));
+                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf))), != -1);
+                }
+                else if(kernel_call == '3')
+                {
+                    WRITES("3\nprocess list: \n");
+                    char buf[240000];
+
+                    list<PCB *>::iterator k;
+                    for(k = processes.begin(); k != processes.end(); k++)
+                    {
+                        PCB *process = *k;
+                        strncat(buf, "\t", strlen("\t"));
+                        strncat(buf, process->name, strlen(process->name));
+                        strncat(buf, "\n", strlen("\n"));
+
+                        WRITES("\t");
+                        WRITES(process->name);
+                        WRITES("\n");
+                    }
+                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf))), != -1);
+                }
+                else if(kernel_call == '4')
+                {
+                    WRITES("4\n");
+                    char *temp = buffer;
+                    WRITES(++temp);
+                    WRITES("\n");
+                    assertsyscall((write(process->parent2child[WRITE], temp, strlen(temp))), != -1);
+                }
+            }
         }
     }
+
+//    list<PCB *>::iterator PCB_iter;
+//    for(PCB_iter = processes.begin(); PCB_iter != processes.end(); PCB_iter++)
+//    {
+//        PCB *process = *PCB_iter;
+//        processes.pop_front();
+//        processes.push_back(process);
+//
+//        char buf[200000];
+//        int len;
+//        assertsyscall((len = read(process->child2parent[READ], buf, sizeof(buf))), != -1);
+//        buf[len] = 0;
+//
+//        WRITES("received kernel call: ");
+//        if((strncmp(buf, "1", 1)) == 0) // return sys_time
+//        {
+//            WRITES("1\n");
+//            char temp[16];
+//            strncat(temp, "sys_time: ", strlen("sys_time: "));
+//            assertsyscall(eye2eh(sys_time, temp, sizeof(temp), 10), != -1);
+//            assertsyscall((write(process->parent2child[WRITE], temp, sizeof(temp))), != -1);
+//            WRITES("sys_time: ");
+//            WRITEI(sys_time);
+//            WRITES("\n");
+//
+//        }
+//        else if((strncmp(buf, "2", 1)) == 0) // return calling process' info
+//        {
+//            WRITES("2\n");
+//            assertsyscall((write(process->parent2child[WRITE], process->name, sizeof((process->name)))), != -1);
+//            WRITES("calling process: ");
+//            WRITES(process->name);
+//            WRITES("\n");
+//        }
+//        else if((strncmp(buf, "3", 1)) == 0) // return list of processes
+//        {
+//            WRITES("3\n");
+//            char temp[200000];
+//            for(list<PCB *>::iterator i = processes.begin(); i != processes.end(); i++)
+//            {
+//                strncat(temp, "\t", strlen("\t"));
+//                strncat(temp, (*i)->name, strlen((*i)->name));
+//            }
+//            assertsyscall((write(process->parent2child[WRITE], process->name, sizeof(process->name))), != -1);
+//            WRITES("process list: \n");
+//            WRITES(temp);
+//            WRITES("\n");
+//        }
+//        else if((strncmp(buf, "4", 1)) == 0) // output to stdout until null is found
+//        {
+//            WRITES("4\n");
+//            char *temp = buf;
+//            temp++;
+//            assertsyscall((write(process->parent2child[WRITE], temp, sizeof(temp))), != -1);
+//            WRITES(temp);
+//            WRITES("\n");
+//        }
+//    }
 
     WRITES("---- leaving trap_handler\n");
 }
