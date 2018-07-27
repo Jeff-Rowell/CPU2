@@ -388,12 +388,11 @@ void trap_handler(int signum)
         fds[0].fd = process->child2parent[READ];
         fds[0].events = POLLIN | POLLOUT;
         int ret = poll(fds, (nfds_t) 1, 0);
-
         if (ret > 0)
         {
             if (fds[0].revents & POLLIN)
             {
-                int n = read(process->child2parent[READ], buffer, 1000);
+                int n = read(process->child2parent[READ], buffer, sizeof(buffer) * sizeof(char));
                 buffer[n] = '\0';
                 char kernel_call = buffer[0];
 
