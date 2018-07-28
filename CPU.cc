@@ -380,6 +380,7 @@ void trap_handler(int signum)
     WRITES("---- entering trap_handler\n");
     assert(signum == SIGTRAP);
 
+    int ret;
     char buffer[10240];
     list<PCB *>::iterator i;
     for(i = processes.begin(); i != processes.end(); i++)
@@ -389,7 +390,7 @@ void trap_handler(int signum)
         struct pollfd fds[1];
         fds[0].fd = process->child2parent[READ];
         fds[0].events = POLLIN | POLLOUT;
-        int ret = poll(fds, (nfds_t) 1, 0);
+        ret = poll(fds, (nfds_t) 1, 0);
         if (ret > 0)
         {
             if (fds[0].revents & POLLIN)
@@ -446,12 +447,26 @@ void trap_handler(int signum)
         }
     }
 
-    if(kill(running->pid, SIGCONT) == -1)
+    if(processes.size() == 1)
     {
-        WRITES("in trap_handler kill error: ");
-        WRITEI(errno);
-        WRITES("\n");
+        if(kill(running->pid, SIGCONT) == -1)
+        {
+            WRITES("in trap_handler kill error: ");
+            WRITEI(errno);
+            WRITES("\n");
+        }
     }
+    else if(processes.size() > 1)
+    {
+        WRITES("continuing idle\n");
+        if(kill(idle->pid, SIGCONT) == -1)
+        {
+            WRITES("in trap_handler kill error: ");
+            WRITEI(errno);
+            WRITES("\n");
+        }
+    }
+
     WRITES("---- leaving trap_handler\n");
 }
 
@@ -486,7 +501,9 @@ void boot()
         kill(0, SIGTERM);
     }
 
-    // Luke Randazzo advised me to cleanup the parent process as well
+    /* Luke Randazzo advised me here but I completely understand that we need to cleanup the parent process as well
+    ** after the fork() to get rid of Valgrind errors.
+     */
     delete(alarm);
     delete(child);
     delete(trap);
