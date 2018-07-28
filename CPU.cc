@@ -14,12 +14,14 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <poll.h>
+using namespace std;
 
 /*
 * ASSIGNMENT HELP:
 * -------------------------------
 * I received help from:
 * - Dr. Beaty's assignment #3
+* - Luke Randazzo, see note in boot()
 *
 * I gave help to:
 * -
@@ -392,62 +394,64 @@ void trap_handler(int signum)
         {
             if (fds[0].revents & POLLIN)
             {
-                int n = read(process->child2parent[READ], buffer, sizeof(buffer) * sizeof(char));
+                int n = read(process->child2parent[READ], buffer, sizeof(buffer));
                 buffer[n] = '\0';
                 char kernel_call = buffer[0];
 
                 WRITES("received kernel call: ");
                 if(kernel_call == '1')
                 {
-                    WRITES("1\nsystem_time: ");
-                    WRITEI(sys_time);
-                    WRITES("\n");
-                    char buf[24];
-                    strncat(buf, "system_time: ", strlen("system_time: "));
-                    assertsyscall(eye2eh(sys_time, buf, strlen(buf), 10), != -1);
-                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf))), != -1);
+                    WRITES("1\n");
+                    string sys_time_string = to_string(sys_time);
+                    string ret_str = "system_time: " + sys_time_string;
+                    char* buf = (char*)ret_str.c_str();
+                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf) * sizeof(char))), != -1);
                 }
                 else if(kernel_call == '2')
                 {
-                    WRITES("2\ncalling process: ");
-                    WRITES(process->name);
-                    WRITES("\n");
-                    char buf[240000];
-                    strncat(buf, "calling process: \n", strlen("calling process: \n"));
-                    strncat(buf, process->name, strlen(process->name));
-                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf))), != -1);
+                    WRITES("2\n");
+                    string calling_process = "calling process: \n";
+                    string ret_str = calling_process + process->name;
+                    char* buf = (char*)ret_str.c_str();
+                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf) * sizeof(char))), != -1);
                 }
                 else if(kernel_call == '3')
                 {
-                    WRITES("3\nprocess list: \n");
-                    char buf[240000];
+                    WRITES("3\n");
+                    string ret_str = "process_list: \n";
+                    int counter = 0;
 
                     list<PCB *>::iterator k;
                     for(k = processes.begin(); k != processes.end(); k++)
                     {
+                        if(counter % 5 == 0 && counter != 0)
+                        {
+                            ret_str += "\n";
+                        }
                         PCB *process = *k;
-                        strncat(buf, "\t", strlen("\t"));
-                        strncat(buf, process->name, strlen(process->name));
-                        strncat(buf, "\n", strlen("\n"));
-
-                        WRITES("\t");
-                        WRITES(process->name);
-                        WRITES("\n");
+                        ret_str = ret_str + process->name + "\t\t";
+                        counter++;
                     }
-                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf))), != -1);
+                    char* buf = (char*)ret_str.c_str();
+                    assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf) * sizeof(char))), != -1);
                 }
                 else if(kernel_call == '4')
                 {
                     WRITES("4\n");
                     char *temp = buffer;
-                    WRITES(++temp);
-                    WRITES("\n");
-                    assertsyscall((write(process->parent2child[WRITE], temp, strlen(temp))), != -1);
+                    temp++;
+                    assertsyscall((write(process->parent2child[WRITE], temp, strlen(temp) * sizeof(char))), != -1);
                 }
             }
         }
     }
 
+    if(kill(running->pid, SIGCONT) == -1)
+    {
+        WRITES("in trap_handler kill error: ");
+        WRITEI(errno);
+        WRITES("\n");
+    }
     WRITES("---- leaving trap_handler\n");
 }
 
@@ -481,6 +485,14 @@ void boot()
         delete(temp);
         kill(0, SIGTERM);
     }
+
+    // Luke Randazzo advised me to cleanup the parent process as well
+    delete(alarm);
+    delete(child);
+    delete(trap);
+    delete(idle);
+    delete(running);
+    delete(temp);
 
     if(ret < 0)
     {
