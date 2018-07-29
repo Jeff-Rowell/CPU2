@@ -4,6 +4,9 @@
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
+#include <cstring>
+#include <cstdlib>
+#include <cstdio>
 
 #define assertsyscall(x, y) if(!((x) y)){int err = errno; \
     fprintf(stderr, "In file %s at line %d: ", __FILE__, __LINE__); \

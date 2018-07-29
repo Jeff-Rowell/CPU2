@@ -52,8 +52,6 @@ perror(#x); exit(err);}
 # define dprintt(a,b)
 #endif
 
-using namespace std;
-
 // http://man7.org/linux/man-pages/man7/signal-safety.7.html
 
 #define WRITES(a) { const char *foo = a; write(1, foo, strlen(foo)); }
@@ -248,7 +246,7 @@ void scheduler(int signum)
         running->interrupts++;
     }
 
-    for(unsigned int i = 0; i < processes.size(); i++)
+    for(int i = 0; i < (int) processes.size(); i++)
     {
         PCB *front = processes.front();
         processes.pop_front();
@@ -324,7 +322,7 @@ void process_done(int signum)
     assert(signum == SIGCHLD);
 
     // might have multiple children done.
-    for(unsigned int i = 0; i < processes.size(); i++)
+    for(int i = 0; i < (int) processes.size(); i++)
     {
         int status, cpid;
 
@@ -403,10 +401,14 @@ void trap_handler(int signum)
                 if(kernel_call == '1')
                 {
                     WRITES("1\n");
-                    string sys_time_string = to_string(sys_time);
-                    string ret_str = "system_time: " + sys_time_string;
-                    char* buf = (char*)ret_str.c_str();
+                    char buf[10];
+                    char temp[8];
+                    strncat(buf, "system_time: ", strlen("system_time") + 1);
+                    assertsyscall( (eye2eh(sys_time, temp, sizeof(temp), 10)), != -1);
+                    strncat(buf, temp, strlen("system_time") + 1);
                     assertsyscall((write(process->parent2child[WRITE], buf, strlen(buf) * sizeof(char))), != -1);
+                    buf[0] = 0;
+                    temp[0] = 0;
                 }
                 else if(kernel_call == '2')
                 {
@@ -447,24 +449,11 @@ void trap_handler(int signum)
         }
     }
 
-    if(processes.size() == 1)
+    if( (processes.size() == 1) && (kill(running->pid, SIGCONT) == -1) )
     {
-        if(kill(running->pid, SIGCONT) == -1)
-        {
-            WRITES("in trap_handler kill error: ");
-            WRITEI(errno);
-            WRITES("\n");
-        }
-    }
-    else if(processes.size() > 1)
-    {
-        WRITES("continuing idle\n");
-        if(kill(idle->pid, SIGCONT) == -1)
-        {
-            WRITES("in trap_handler kill error: ");
-            WRITEI(errno);
-            WRITES("\n");
-        }
+        WRITES("in trap_handler kill error: ");
+        WRITEI(errno);
+        WRITES("\n");
     }
 
     WRITES("---- leaving trap_handler\n");
@@ -501,8 +490,8 @@ void boot()
         kill(0, SIGTERM);
     }
 
-    /* Luke Randazzo advised me here but I completely understand that we need to cleanup the parent process as well
-    ** after the fork() to get rid of Valgrind errors.
+    /* Luke Randazzo helped me here but I completely understand that we need to cleanup the parent process as well
+    ** after the fork(), otherwise the parent process' memory for the sigaction structs would be leaked.
      */
     delete(alarm);
     delete(child);
