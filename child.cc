@@ -51,6 +51,14 @@ int main(int argc, char* argv[])
     assertsyscall((len4 = read(4, buffer4, sizeof(buffer4))), != -1);
     buffer4[len4] = 0;
     printf("%s\n", buffer4);
+    
+    char buffer5[240000];
+    int len5;
+    assertsyscall(write(3, "5BYE PARENT!", sizeof("5BYE PARENT!")), != -1);
+    assert( kill(ppid, SIGTRAP) != -1 );
+    assertsyscall((len5 = read(4, buffer5, sizeof(buffer5))), != -1);
+    buffer5[len5] = 0;
+printf("%s\n", buffer5);
 
     return 0;
 }
