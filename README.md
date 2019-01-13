@@ -1,3 +1,4 @@
 # CPU2
-This is a project from my OS class. The purpose of the assignment was to implement a light weight kernel that does basic
-things like round robining through a list of proccess. 
+A lightweight kernel in C++ that takes executables as command line arguments and round robins through them for a fixed length of time in a time-sharing fashion. This project allowed me to practice my knowledge of process control blocks, interrupt service vectors, sending signals, SIG traps, and piping information between parent and child processes.
+
+All system calls are asserted, plus static and dynamic analysis was done with scan-build and valgrind, respectively. No warnings are generated, and no memory leakage.
