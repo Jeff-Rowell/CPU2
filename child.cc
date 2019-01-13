@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     assert( kill(ppid, SIGTRAP) != -1 );
     assertsyscall((len5 = read(4, buffer5, sizeof(buffer5))), != -1);
     buffer5[len5] = 0;
-printf("%s\n", buffer5);
+    printf("%s\n", buffer5);
 
     return 0;
 }
