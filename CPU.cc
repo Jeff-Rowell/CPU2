@@ -16,17 +16,6 @@
 #include <poll.h>
 using namespace std;
 
-/*
-* ASSIGNMENT HELP:
-* -------------------------------
-* I received help from:
-* - Dr. Beaty's assignment #3
-* - Luke Randazzo, see note in boot()
-*
-* I gave help to:
-* -
-*/
-
 #define NUM_SECONDS 20
 #define EVER ;;
 #define READ 0
